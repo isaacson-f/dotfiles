@@ -1,0 +1,5 @@
+brew "opentofu"
+go "golang.org/x/vuln/cmd/govulncheck"
+npm "@openai/codex"
+npm "corepack"
+npm "pi-codex"

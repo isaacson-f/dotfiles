@@ -1,0 +1,9 @@
+[user]
+	name = Your Name
+	email = you@example.com
+
+# Put machine- or employer-specific Git settings here, then include it from
+# ~/.gitconfig if needed:
+#
+# [include]
+#   path = ~/.gitconfig.local

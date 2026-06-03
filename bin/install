@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BACKUP_DIR="${HOME}/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
+
+link_file() {
+  local source_path="$1"
+  local target_path="$2"
+
+  if [[ ! -e "$source_path" ]]; then
+    echo "missing source: $source_path" >&2
+    return 1
+  fi
+
+  mkdir -p "$(dirname "$target_path")"
+
+  if [[ -L "$target_path" && "$(readlink "$target_path")" == "$source_path" ]]; then
+    echo "ok: $target_path"
+    return 0
+  fi
+
+  if [[ -e "$target_path" || -L "$target_path" ]]; then
+    mkdir -p "$BACKUP_DIR"
+    mv "$target_path" "$BACKUP_DIR/"
+    echo "backed up: $target_path -> $BACKUP_DIR/"
+  fi
+
+  ln -s "$source_path" "$target_path"
+  echo "linked: $target_path -> $source_path"
+}
+
+link_file "$DOTFILES_DIR/home/.zshrc" "$HOME/.zshrc"
+link_file "$DOTFILES_DIR/home/.zprofile" "$HOME/.zprofile"
+link_file "$DOTFILES_DIR/home/.zshenv" "$HOME/.zshenv"
+link_file "$DOTFILES_DIR/home/.gitconfig" "$HOME/.gitconfig"
+
+link_file "$DOTFILES_DIR/config/tmux/tmux.conf" "$HOME/.config/tmux/tmux.conf"
+link_file "$DOTFILES_DIR/config/fish/config.fish" "$HOME/.config/fish/config.fish"
+link_file "$DOTFILES_DIR/config/zed/settings.json" "$HOME/.config/zed/settings.json"
+link_file "$DOTFILES_DIR/config/git/ignore" "$HOME/.config/git/ignore"
+link_file "$DOTFILES_DIR/config/gh/config.yml" "$HOME/.config/gh/config.yml"
+
+link_file "$DOTFILES_DIR/claude/settings.json" "$HOME/.claude/settings.json"
+link_file "$DOTFILES_DIR/claude/rules/code-style.md" "$HOME/.claude/rules/code-style.md"
+link_file "$DOTFILES_DIR/claude/rules/anti-slop.md" "$HOME/.claude/rules/anti-slop.md"
+
+link_file "$DOTFILES_DIR/codex/rules/default.rules" "$HOME/.codex/rules/default.rules"
+
+echo
+echo "Install complete."
+if [[ -d "$BACKUP_DIR" ]]; then
+  echo "Backups were written to: $BACKUP_DIR"
+fi

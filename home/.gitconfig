@@ -1,0 +1,24 @@
+[user]
+	name = Frank Isaacson
+	email = isaacson.f@northeastern.edu
+
+[alias]
+	s = status
+	cm = commit -m
+	ca = commit --amend -C HEAD
+	p = push
+	pf = push -f
+	rdv = !git checkout develop && git pull && git checkout 0 && git rebase develop || git rebase --abort
+	caf = !git add . && git commit --amend -C HEAD && git push -f
+	cmp = "!f() { git commit -m \"$1\" && git push; }; f"
+	acmp = "!f() { git add . && git commit -m \"$1\" && git push; }; f"
+	rb = "!f() { n=${1:-20}; git reflog --grep-reflog=\"checkout: moving from\" --format=\"%gs\" | sed -E \"s/^checkout: moving from .* to //\" | awk -v limit=\"$n\" \"NF && !seen[\\$0]++ { a[++c]=\\$0; if (c==limit) exit } END { for (i=c; i>=1; i--) printf \\\"[%d] %s\\\\n\\\", c-i+1, a[i] }\"; }; f"
+	pushup = "!f() { branch=$(git symbolic-ref --quiet --short HEAD) || { echo \"Not on a branch\" >&2; return 1; }; git push -u origin \"$branch\"; }; f"
+	co = "!f() { arg=\"$1\"; shift || true; if [ -z \"$arg\" ]; then git checkout; return; fi; case \"$arg\" in *[!0-9]*) git checkout \"$arg\" \"$@\" ;; *) branch=$(git reflog --grep-reflog=\"checkout: moving from\" --format=\"%gs\" | sed -E \"s/^checkout: moving from .* to //\" | awk \"NF && !seen[\\$0]++ { a[++c]=\\$0; if (c==100) exit } END { for (i=c; i>=1; i--) print a[i] }\" | awk -v idx=\"$arg\" \"NR==idx { print; exit }\"); if [ -z \"$branch\" ]; then echo \"No recent branch at index [$arg]. Run: git rb\" >&2; return 1; fi; git checkout \"$branch\" \"$@\" ;; esac; }; f"
+
+[filter "lfs"]
+	required = true
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+

@@ -1,0 +1,7 @@
+prefix_rule(pattern=["git", "commit"], decision="allow")
+prefix_rule(pattern=["env", "UV_CACHE_DIR=/tmp/uv-cache", "uv", "run"], decision="allow")
+prefix_rule(pattern=["aws", "ec2"], decision="allow")
+prefix_rule(pattern=["git", "config"], decision="allow")
+prefix_rule(pattern=["go", "get"], decision="allow")
+prefix_rule(pattern=["make", "check"], decision="allow")
+prefix_rule(pattern=["env", "GOCACHE=/tmp/go-cache", "GOTMPDIR=/tmp", "make", "check"], decision="allow")

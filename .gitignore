@@ -1,0 +1,22 @@
+.DS_Store
+*.swp
+*.tmp
+
+# Never commit secrets or local machine state.
+secrets/
+*.key
+*.pem
+*.p12
+*.mobileprovision
+auth.json
+hosts.yml
+credentials.db
+access_tokens.db
+default_configs.db
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+history.jsonl
+
+# Local bootstrap artifacts.
+.backup/
