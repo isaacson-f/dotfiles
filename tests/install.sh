@@ -29,6 +29,14 @@ assert_link() {
 
 mkdir -p "$MOCK_BIN"
 : > "$TEST_ROOT/operations.log"
+
+# Codex is owned by Homebrew cask. An npm declaration collides with an existing
+# cask-owned /opt/homebrew/bin/codex and fails with npm EEXIST.
+grep -qx 'cask "codex"' "$REPO_DIR/Brewfile" \
+  || fail 'Codex is not declared as a Homebrew cask'
+if grep -qx 'npm "@openai/codex"' "$REPO_DIR/Brewfile"; then
+  fail 'Codex must not also be installed through npm'
+fi
 for command in brew git curl defaults; do
   cat > "$MOCK_BIN/$command" <<EOF
 #!/usr/bin/env bash
