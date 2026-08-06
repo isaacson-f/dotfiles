@@ -1,8 +1,17 @@
+if test -x /opt/homebrew/bin/brew
+    eval (/opt/homebrew/bin/brew shellenv)
+else if test -x /usr/local/bin/brew
+    eval (/usr/local/bin/brew shellenv)
+else if test -x /home/linuxbrew/.linuxbrew/bin/brew
+    eval (/home/linuxbrew/.linuxbrew/bin/brew shellenv)
+else if type -q brew
+    eval (brew shellenv)
+end
 
-# >>> conda initialize >>>
-# !! Contents within this block are managed by 'conda init' !!
-eval /Users/frankisaacson/opt/anaconda3/bin/conda "shell.fish" "hook" $argv | source
-# <<< conda initialize <<<
+if test -x "$HOME/opt/anaconda3/bin/conda"
+    eval "$HOME/opt/anaconda3/bin/conda" "shell.fish" "hook" $argv | source
+end
 
-
-string match -q "$TERM_PROGRAM" "kiro" and . (kiro --locate-shell-integration-path fish)
+if test "$TERM_PROGRAM" = "kiro"; and type -q kiro
+    source (kiro --locate-shell-integration-path fish)
+end

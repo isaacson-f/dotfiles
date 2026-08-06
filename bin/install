@@ -1,44 +1,293 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BACKUP_DIR="${HOME}/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
+DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+DRY_RUN=false
+SKIP_BREW=false
+SKIP_OH_MY_ZSH=false
+APPLY_MACOS_DEFAULTS=false
+BREW=""
+BACKUP_DIR=""
+
+usage() {
+  cat <<'EOF'
+Usage: ./bin/install [options]
+
+Install Homebrew-managed dependencies, Oh My Zsh, and dotfile symlinks.
+
+Options:
+  --dry-run          Report actions without changing files or using the network.
+  --skip-brew        Do not bootstrap Homebrew or install the Brewfile.
+  --skip-oh-my-zsh   Do not validate or install Oh My Zsh.
+  --macos-defaults   Apply the optional macOS keyboard-repeat defaults.
+  -h, --help         Show this help text.
+EOF
+}
+
+log() {
+  printf '%s\n' "$*"
+}
+
+die() {
+  printf 'error: %s\n' "$*" >&2
+  exit 1
+}
+
+find_brew() {
+  if command -v brew >/dev/null 2>&1; then
+    command -v brew
+  elif [[ -x /opt/homebrew/bin/brew ]]; then
+    printf '%s\n' /opt/homebrew/bin/brew
+  elif [[ -x /usr/local/bin/brew ]]; then
+    printf '%s\n' /usr/local/bin/brew
+  elif [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+    printf '%s\n' /home/linuxbrew/.linuxbrew/bin/brew
+  else
+    return 1
+  fi
+}
+
+validate_home() {
+  [[ -n "${HOME:-}" && "$HOME" != "/" ]] || die 'HOME must be set to a non-root directory'
+  [[ "$HOME" = /* ]] || die 'HOME must be an absolute path'
+}
+
+validate_source_path() {
+  local source_path="$1"
+  [[ "$source_path" == "$DOTFILES_DIR/"* ]] || die "source is outside the dotfiles repository: $source_path"
+  [[ -e "$source_path" ]] || die "missing source: $source_path"
+}
+
+validate_target_path() {
+  local target_path="$1"
+  local relative_path parent_path parent component
+
+  [[ "$target_path" == "$HOME/"* ]] || die "target is outside HOME: $target_path"
+  relative_path="${target_path#"$HOME/"}"
+  [[ -n "$relative_path" ]] || die "unsafe target path: $target_path"
+
+  # Do not follow a symlinked parent outside HOME while preparing a link.
+  parent="$HOME"
+  parent_path="$(dirname "$relative_path")"
+  if [[ "$parent_path" != "." ]]; then
+    IFS='/' read -r -a components <<< "$parent_path"
+    for component in "${components[@]}"; do
+      [[ -n "$component" && "$component" != "." && "$component" != ".." ]] \
+        || die "unsafe target path: $target_path"
+      parent="$parent/$component"
+      [[ ! -L "$parent" ]] || die "refusing to use symlinked target parent: $parent"
+    done
+  fi
+}
+
+ensure_backup_dir() {
+  local backup_parent="$HOME/.dotfiles-backup"
+
+  [[ -z "$BACKUP_DIR" ]] || return 0
+  [[ ! -L "$backup_parent" ]] \
+    || die "refusing to use a symlinked backup root: $backup_parent"
+  [[ ! -e "$backup_parent" || -d "$backup_parent" ]] \
+    || die "backup root exists but is not a directory: $backup_parent"
+
+  if "$DRY_RUN"; then
+    BACKUP_DIR="$backup_parent/$(date +%Y%m%d-%H%M%S).DRYRUN"
+    return 0
+  fi
+
+  mkdir -p "$backup_parent"
+  BACKUP_DIR="$(mktemp -d "$backup_parent/$(date +%Y%m%d-%H%M%S).XXXXXX")" \
+    || die 'could not create a unique backup directory'
+}
+
+backup_target() {
+  local target_path="$1"
+  local relative_path backup_path
+
+  ensure_backup_dir
+  relative_path="${target_path#"$HOME/"}"
+  backup_path="$BACKUP_DIR/$relative_path"
+  [[ ! -e "$backup_path" && ! -L "$backup_path" ]] \
+    || die "refusing to overwrite an existing backup: $backup_path"
+
+  if "$DRY_RUN"; then
+    log "would back up: $target_path -> $backup_path"
+    return 0
+  fi
+
+  mkdir -p "$(dirname "$backup_path")"
+  mv "$target_path" "$backup_path"
+  log "backed up: $target_path -> $backup_path"
+}
 
 link_file() {
   local source_path="$1"
   local target_path="$2"
 
-  if [[ ! -e "$source_path" ]]; then
-    echo "missing source: $source_path" >&2
-    return 1
-  fi
-
-  mkdir -p "$(dirname "$target_path")"
+  validate_source_path "$source_path"
+  validate_target_path "$target_path"
 
   if [[ -L "$target_path" && "$(readlink "$target_path")" == "$source_path" ]]; then
-    echo "ok: $target_path"
+    log "ok: $target_path"
     return 0
   fi
 
   if [[ -e "$target_path" || -L "$target_path" ]]; then
-    mkdir -p "$BACKUP_DIR"
-    mv "$target_path" "$BACKUP_DIR/"
-    echo "backed up: $target_path -> $BACKUP_DIR/"
+    backup_target "$target_path"
   fi
 
+  if "$DRY_RUN"; then
+    log "would link: $target_path -> $source_path"
+    return 0
+  fi
+
+  mkdir -p "$(dirname "$target_path")"
   ln -s "$source_path" "$target_path"
-  echo "linked: $target_path -> $source_path"
+  log "linked: $target_path -> $source_path"
+}
+
+bootstrap_homebrew() {
+  local brew_path
+
+  # A dry run may inspect PATH but must not execute brew, curl, or any installer.
+  if "$DRY_RUN"; then
+    if find_brew >/dev/null 2>&1; then
+      log "would run: brew bundle install --file=$DOTFILES_DIR/Brewfile --no-upgrade"
+    else
+      log 'would install Homebrew using https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh'
+      log "would run: brew bundle install --file=$DOTFILES_DIR/Brewfile --no-upgrade"
+    fi
+    log 'would verify: git lfs version'
+    return 0
+  fi
+
+  if brew_path="$(find_brew)"; then
+    BREW="$brew_path"
+  else
+    log 'Homebrew is not installed; installing it noninteractively.'
+    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    BREW="$(find_brew)" || die 'Homebrew installation completed but brew was not found'
+  fi
+
+  # shellenv makes newly installed Homebrew formulae available to this process.
+  eval "$("$BREW" shellenv)"
+  "$BREW" bundle install --file="$DOTFILES_DIR/Brewfile" --no-upgrade
+
+  if git lfs version >/dev/null 2>&1; then
+    log 'ok: Git LFS is available'
+  else
+    die 'Git LFS was not available after Brewfile installation'
+  fi
+}
+
+install_tmux_plugins() {
+  local tpm_prefix installer tmux_bin plugin_path
+
+  if "$DRY_RUN"; then
+    log 'would install: TPM plugins declared in ~/.config/tmux/tmux.conf'
+    return 0
+  fi
+
+  [[ -n "$BREW" ]] || die 'Homebrew path is unavailable for TPM plugin installation'
+  tpm_prefix="$("$BREW" --prefix tpm)"
+  installer="$tpm_prefix/share/tpm/bin/install_plugins"
+  tmux_bin="$("$BREW" --prefix tmux)/bin/tmux"
+  plugin_path="$HOME/.config/tmux/plugins/"
+  [[ -x "$installer" ]] || die "TPM plugin installer is missing: $installer"
+  [[ -x "$tmux_bin" ]] || die "Homebrew tmux executable is missing: $tmux_bin"
+
+  # Keep a running tmux server and the standalone TPM helper aligned with the
+  # XDG plugin path declared in tmux.conf. On a new server, tmux.conf sets the
+  # same value while loading.
+  "$tmux_bin" start-server \; set-environment -g TMUX_PLUGIN_MANAGER_PATH "$plugin_path"
+  TMUX_PLUGIN_MANAGER_PATH="$plugin_path" "$installer"
+  log 'ok: TPM plugins are installed'
+}
+
+is_oh_my_zsh_origin() {
+  local origin="${1%/}"
+  origin="${origin%.git}"
+  case "$origin" in
+    git@github.com:ohmyzsh/ohmyzsh|https://github.com/ohmyzsh/ohmyzsh|ssh://git@github.com/ohmyzsh/ohmyzsh)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+ensure_oh_my_zsh() {
+  local omz_dir="$HOME/.oh-my-zsh"
+  local checkout_root origin
+
+  if [[ ! -e "$omz_dir" && ! -L "$omz_dir" ]]; then
+    if "$DRY_RUN"; then
+      log "would clone: https://github.com/ohmyzsh/ohmyzsh.git -> $omz_dir"
+    else
+      git clone --depth=1 https://github.com/ohmyzsh/ohmyzsh.git "$omz_dir"
+      log "installed: Oh My Zsh -> $omz_dir"
+    fi
+    return 0
+  fi
+
+  [[ -d "$omz_dir" && ! -L "$omz_dir" ]] || die "Oh My Zsh destination exists but is not a directory: $omz_dir"
+  checkout_root="$(git -C "$omz_dir" rev-parse --show-toplevel 2>/dev/null)" \
+    || die "Oh My Zsh destination is not a Git checkout: $omz_dir"
+  [[ "$checkout_root" == "$(cd "$omz_dir" && pwd -P)" ]] \
+    || die "Oh My Zsh destination is not the root of its Git checkout: $omz_dir"
+  origin="$(git -C "$omz_dir" remote get-url origin 2>/dev/null)" \
+    || die "Oh My Zsh checkout has no origin remote: $omz_dir"
+  is_oh_my_zsh_origin "$origin" \
+    || die "Oh My Zsh checkout has an unexpected origin: $origin"
+  [[ -r "$omz_dir/oh-my-zsh.sh" ]] \
+    || die "Oh My Zsh checkout is missing oh-my-zsh.sh: $omz_dir"
+  log "ok: Oh My Zsh checkout at $omz_dir"
 }
 
 configure_macos_defaults() {
   if [[ "$(uname -s)" != "Darwin" ]]; then
+    log 'skipped: macOS defaults (not macOS)'
+    return 0
+  fi
+
+  if "$DRY_RUN"; then
+    log 'would configure: macOS keyboard repeat defaults'
     return 0
   fi
 
   defaults write -g InitialKeyRepeat -float 10.0
   defaults write -g KeyRepeat -float 1.0
-  echo "configured: macOS keyboard repeat defaults"
+  log 'configured: macOS keyboard repeat defaults'
 }
+
+while (($#)); do
+  case "$1" in
+    --dry-run) DRY_RUN=true ;;
+    --skip-brew) SKIP_BREW=true ;;
+    --skip-oh-my-zsh) SKIP_OH_MY_ZSH=true ;;
+    --macos-defaults) APPLY_MACOS_DEFAULTS=true ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *) die "unknown option: $1 (use --help)" ;;
+  esac
+  shift
+done
+
+validate_home
+
+if "$SKIP_BREW"; then
+  log 'skipped: Homebrew bootstrap and Brewfile installation'
+else
+  bootstrap_homebrew
+fi
+
+if "$SKIP_OH_MY_ZSH"; then
+  log 'skipped: Oh My Zsh installation'
+else
+  ensure_oh_my_zsh
+fi
 
 link_file "$DOTFILES_DIR/home/.zshrc" "$HOME/.zshrc"
 link_file "$DOTFILES_DIR/home/.zprofile" "$HOME/.zprofile"
@@ -57,10 +306,15 @@ link_file "$DOTFILES_DIR/claude/rules/anti-slop.md" "$HOME/.claude/rules/anti-sl
 
 link_file "$DOTFILES_DIR/codex/rules/default.rules" "$HOME/.codex/rules/default.rules"
 
-configure_macos_defaults
+if ! "$SKIP_BREW"; then
+  install_tmux_plugins
+fi
 
-echo
-echo "Install complete."
+if "$APPLY_MACOS_DEFAULTS"; then
+  configure_macos_defaults
+fi
+
+printf '\nInstall complete.\n'
 if [[ -d "$BACKUP_DIR" ]]; then
-  echo "Backups were written to: $BACKUP_DIR"
+  printf 'Backups were written to: %s\n' "$BACKUP_DIR"
 fi
