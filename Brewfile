@@ -1,4 +1,3 @@
-brew "fish"
 brew "git"
 brew "git-lfs"
 brew "gh"

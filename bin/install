@@ -295,7 +295,6 @@ link_file "$DOTFILES_DIR/home/.zshenv" "$HOME/.zshenv"
 link_file "$DOTFILES_DIR/home/.gitconfig" "$HOME/.gitconfig"
 
 link_file "$DOTFILES_DIR/config/tmux/tmux.conf" "$HOME/.config/tmux/tmux.conf"
-link_file "$DOTFILES_DIR/config/fish/config.fish" "$HOME/.config/fish/config.fish"
 link_file "$DOTFILES_DIR/config/zed/settings.json" "$HOME/.config/zed/settings.json"
 link_file "$DOTFILES_DIR/config/git/ignore" "$HOME/.config/git/ignore"
 link_file "$DOTFILES_DIR/config/gh/config.yml" "$HOME/.config/gh/config.yml"

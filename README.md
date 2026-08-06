@@ -29,7 +29,7 @@ The installer is idempotent. It:
 1. Installs Homebrew noninteractively if it is absent, then loads `brew shellenv` for
    the current process.
 2. Installs the `Brewfile` with `brew bundle install --no-upgrade`. The Brewfile owns
-   Fish, Zsh, tmux, TPM, Git LFS, GitHub CLI, Node.js, Zed, Claude Code, and the other declared
+   Zsh, tmux, TPM, Git LFS, GitHub CLI, Node.js, Zed, Claude Code, and the other declared
    development tools.
 3. Verifies that Homebrew's Git LFS executable is available. The tracked
    `.gitconfig` already contains the required LFS filter configuration, so the
