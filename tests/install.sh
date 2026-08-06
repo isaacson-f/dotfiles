@@ -34,6 +34,8 @@ mkdir -p "$MOCK_BIN"
 # cask-owned /opt/homebrew/bin/codex and fails with npm EEXIST.
 grep -qx 'cask "codex"' "$REPO_DIR/Brewfile" \
   || fail 'Codex is not declared as a Homebrew cask'
+grep -qx 'cask "ghostty"' "$REPO_DIR/Brewfile" \
+  || fail 'Ghostty is not declared as a Homebrew cask'
 if grep -qx 'npm "@openai/codex"' "$REPO_DIR/Brewfile"; then
   fail 'Codex must not also be installed through npm'
 fi
