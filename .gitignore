@@ -18,5 +18,22 @@ default_configs.db
 *.sqlite-wal
 history.jsonl
 
+# Pi runtime state and credentials. Only the curated portable configuration under
+# pi/ is tracked; do not add generated state when maintaining it.
+pi/auth.json
+pi/trust.json
+pi/sessions/
+pi/missions/
+pi/backups/
+pi/runtime/
+pi/npm/
+pi/bin/
+pi/models-store.json
+pi/run-history.jsonl
+pi/subagent-router-state.json
+pi/extensions/**/node_modules/
+pi/extensions/**/.env
+pi/skills/**/.env
+
 # Local bootstrap artifacts.
 .backup/

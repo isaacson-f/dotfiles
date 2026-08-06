@@ -305,6 +305,14 @@ link_file "$DOTFILES_DIR/claude/rules/anti-slop.md" "$HOME/.claude/rules/anti-sl
 
 link_file "$DOTFILES_DIR/codex/rules/default.rules" "$HOME/.codex/rules/default.rules"
 
+# Pi runtime state, packages, and credentials remain local. Link only portable
+# user-authored configuration so the runtime can continue to manage its own state.
+link_file "$DOTFILES_DIR/pi/AGENTS.md" "$HOME/.pi/agent/AGENTS.md"
+link_file "$DOTFILES_DIR/pi/settings.json" "$HOME/.pi/agent/settings.json"
+link_file "$DOTFILES_DIR/pi/models.json" "$HOME/.pi/agent/models.json"
+link_file "$DOTFILES_DIR/pi/extensions" "$HOME/.pi/agent/extensions"
+link_file "$DOTFILES_DIR/pi/skills" "$HOME/.pi/agent/skills"
+
 if ! "$SKIP_BREW"; then
   install_tmux_plugins
 fi

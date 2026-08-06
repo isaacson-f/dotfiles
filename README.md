@@ -12,6 +12,8 @@ excluded.
 - `config/`: files that live under `$HOME/.config`
 - `claude/`: Claude settings and user-authored rules
 - `codex/`: Codex rules
+- `pi/`: portable Pi agent configuration: global instructions, settings, models,
+  extensions, and selected local skills (`diagnose`, `stow-dotfiles`, and `tdd`)
 - `templates/`: examples for secret or machine-specific files
 - `bin/`: installation and maintenance scripts
 - `Brewfile`: Homebrew-managed applications and command-line dependencies
@@ -38,7 +40,11 @@ The installer is idempotent. It:
    package, so this narrow Git clone is the one fallback. An existing installation is
    never updated or overwritten: it must be a Git checkout whose `origin` is the
    official `ohmyzsh/ohmyzsh` repository (SSH and HTTPS remotes are accepted).
-5. Symlinks the tracked configuration files into `$HOME`.
+5. Symlinks the tracked configuration files into `$HOME`, including the selected Pi
+   configuration at `~/.pi/agent/`. Pi package declarations live in its tracked
+   `settings.json`; restore their local package installations with Pi's normal package
+   commands (for example, `pi install <source>` or `pi update --extensions`). Their
+   installed package directories remain local runtime state.
 6. Installs the tmux plugins declared in `tmux.conf` through Homebrew-managed TPM.
 
 > **Warning:** A normal install can download software and may prompt for privileges
@@ -72,6 +78,7 @@ timestamped, path-preserving backup directory, for example:
 ```text
 ~/.dotfiles-backup/20260806-123456.A1b2C3/.config/zed/settings.json
 ~/.dotfiles-backup/20260806-123456.A1b2C3/.claude/settings.json
+~/.dotfiles-backup/20260806-123456.A1b2C3/.pi/agent/settings.json
 ```
 
 The random suffix makes each backup run unique, while preserving distinct files with
@@ -97,6 +104,9 @@ Do not commit:
 - GitHub CLI `hosts.yml`
 - gcloud databases
 - editor or agent histories
+- Pi credentials and runtime state, including `~/.pi/agent/auth.json`, `trust.json`,
+  `sessions/`, `missions/`, `backups/`, `runtime/`, `npm/`, `bin/`, model stores,
+  router state, and run history
 - SQLite databases, caches, logs, and local session files
 
 Use `templates/` for examples that need to be recreated per machine.

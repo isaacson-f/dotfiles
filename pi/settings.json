@@ -1,0 +1,117 @@
+{
+  "lastChangelogVersion": "0.84.0",
+  "defaultProvider": "openai",
+  "defaultModel": "gpt-5.6-sol",
+  "defaultThinkingLevel": "high",
+  "showCacheMissNotices": true,
+  "packages": [
+    "npm:pi-subagents",
+    "npm:pi-web-access"
+  ],
+  "skills": [
+    "skills"
+  ],
+  "enabledModels": [
+    "openai/gpt-5.3-codex",
+    "openai/gpt-5.4-pro",
+    "openai/gpt-5.4",
+    "openai/gpt-5.5",
+    "openai/gpt-5.5-pro",
+    "openai/gpt-5.6-*"
+  ],
+  "theme": "dark",
+  "compaction": {
+    "enabled": true,
+    "reserveTokens": 27200,
+    "keepRecentTokens": 20000
+  },
+  "subagents": {
+    "defaultModel": "openai/gpt-5.6-luna",
+    "agentOverrides": {
+      "scout": {
+        "model": "openai/gpt-5.6-luna",
+        "fallbackModels": [
+          "openai/gpt-5.6-terra",
+          "openai/gpt-5.6-sol"
+        ],
+        "acceptanceRole": "read-only",
+        "toolBudget": {
+          "soft": 12,
+          "hard": 20,
+          "block": "*"
+        }
+      },
+      "researcher": {
+        "model": "openai/gpt-5.6-luna",
+        "fallbackModels": [
+          "openai/gpt-5.6-terra",
+          "openai/gpt-5.6-sol"
+        ],
+        "acceptanceRole": "read-only",
+        "toolBudget": {
+          "soft": 10,
+          "hard": 18,
+          "block": "*"
+        }
+      },
+      "context-builder": {
+        "model": "openai/gpt-5.6-luna",
+        "fallbackModels": [
+          "openai/gpt-5.6-terra",
+          "openai/gpt-5.6-sol"
+        ],
+        "acceptanceRole": "read-only",
+        "toolBudget": {
+          "soft": 15,
+          "hard": 25,
+          "block": "*"
+        }
+      },
+      "delegate": {
+        "model": "openai/gpt-5.6-terra",
+        "fallbackModels": [
+          "openai/gpt-5.6-sol"
+        ],
+        "acceptanceRole": "writer"
+      },
+      "planner": {
+        "model": "openai/gpt-5.6-terra",
+        "fallbackModels": [
+          "openai/gpt-5.6-sol"
+        ],
+        "acceptanceRole": "read-only",
+        "toolBudget": {
+          "soft": 15,
+          "hard": 25,
+          "block": "*"
+        }
+      },
+      "reviewer": {
+        "model": "openai/gpt-5.6-terra",
+        "fallbackModels": [
+          "openai/gpt-5.6-sol"
+        ],
+        "acceptanceRole": "read-only",
+        "toolBudget": {
+          "soft": 15,
+          "hard": 25,
+          "block": "*"
+        }
+      },
+      "worker": {
+        "model": "openai/gpt-5.6-terra",
+        "fallbackModels": [
+          "openai/gpt-5.6-sol"
+        ],
+        "acceptanceRole": "writer"
+      },
+      "oracle": {
+        "model": "openai/gpt-5.6-sol",
+        "fallbackModels": [
+          "openai/gpt-5.6-terra"
+        ],
+        "acceptanceRole": "read-only"
+      }
+    }
+  }
+}

@@ -62,6 +62,11 @@ assert_link "$HOME/.claude/settings.json" "$REPO_DIR/claude/settings.json"
 assert_link "$HOME/.claude/rules/code-style.md" "$REPO_DIR/claude/rules/code-style.md"
 assert_link "$HOME/.claude/rules/anti-slop.md" "$REPO_DIR/claude/rules/anti-slop.md"
 assert_link "$HOME/.codex/rules/default.rules" "$REPO_DIR/codex/rules/default.rules"
+assert_link "$HOME/.pi/agent/AGENTS.md" "$REPO_DIR/pi/AGENTS.md"
+assert_link "$HOME/.pi/agent/settings.json" "$REPO_DIR/pi/settings.json"
+assert_link "$HOME/.pi/agent/models.json" "$REPO_DIR/pi/models.json"
+assert_link "$HOME/.pi/agent/extensions" "$REPO_DIR/pi/extensions"
+assert_link "$HOME/.pi/agent/skills" "$REPO_DIR/pi/skills"
 
 "$INSTALL" --skip-brew --skip-oh-my-zsh > "$TEST_ROOT/second-run.out"
 grep -q "ok: $HOME/.zshrc" "$TEST_ROOT/second-run.out" \
@@ -69,21 +74,26 @@ grep -q "ok: $HOME/.zshrc" "$TEST_ROOT/second-run.out" \
 [[ ! -e "$HOME/.dotfiles-backup" ]] || fail 'second run created an unnecessary backup'
 
 # Files with the same basename must retain their HOME-relative paths in backups.
-rm "$HOME/.claude/settings.json" "$HOME/.config/zed/settings.json"
+rm "$HOME/.claude/settings.json" "$HOME/.config/zed/settings.json" "$HOME/.pi/agent/settings.json"
 printf 'claude settings\n' > "$HOME/.claude/settings.json"
 printf 'zed settings\n' > "$HOME/.config/zed/settings.json"
+printf 'pi settings\n' > "$HOME/.pi/agent/settings.json"
 "$INSTALL" --skip-brew --skip-oh-my-zsh > "$TEST_ROOT/backup-run.out"
 
 backup_root="$(find "$HOME/.dotfiles-backup" -mindepth 1 -maxdepth 1 -type d -print -quit)"
 [[ -n "$backup_root" ]] || fail 'backup directory was not created'
 assert_file "$backup_root/.claude/settings.json"
 assert_file "$backup_root/.config/zed/settings.json"
+assert_file "$backup_root/.pi/agent/settings.json"
 grep -qx 'claude settings' "$backup_root/.claude/settings.json" \
   || fail 'Claude backup content changed'
 grep -qx 'zed settings' "$backup_root/.config/zed/settings.json" \
   || fail 'Zed backup content changed'
+grep -qx 'pi settings' "$backup_root/.pi/agent/settings.json" \
+  || fail 'Pi backup content changed'
 assert_link "$HOME/.claude/settings.json" "$REPO_DIR/claude/settings.json"
 assert_link "$HOME/.config/zed/settings.json" "$REPO_DIR/config/zed/settings.json"
+assert_link "$HOME/.pi/agent/settings.json" "$REPO_DIR/pi/settings.json"
 
 # A second replacement run in the same second must use another unique backup
 # directory rather than overwriting the first run's files.
