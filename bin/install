@@ -145,6 +145,28 @@ link_file() {
   log "linked: $target_path -> $source_path"
 }
 
+ensure_dir() {
+  local dir_path="$1"
+
+  validate_target_path "$dir_path"
+  [[ ! -L "$dir_path" ]] || die "refusing to use symlinked directory: $dir_path"
+  [[ ! -e "$dir_path" || -d "$dir_path" ]] \
+    || die "destination exists but is not a directory: $dir_path"
+
+  if [[ -d "$dir_path" ]]; then
+    log "ok: $dir_path"
+    return 0
+  fi
+
+  if "$DRY_RUN"; then
+    log "would create directory: $dir_path"
+    return 0
+  fi
+
+  mkdir -p "$dir_path"
+  log "created directory: $dir_path"
+}
+
 bootstrap_homebrew() {
   local brew_path
 
@@ -295,6 +317,7 @@ link_file "$DOTFILES_DIR/home/.zshenv" "$HOME/.zshenv"
 link_file "$DOTFILES_DIR/home/.gitconfig" "$HOME/.gitconfig"
 
 link_file "$DOTFILES_DIR/config/tmux/tmux.conf" "$HOME/.config/tmux/tmux.conf"
+ensure_dir "$HOME/.local/share/tmux/resurrect"
 link_file "$DOTFILES_DIR/config/zed/settings.json" "$HOME/.config/zed/settings.json"
 link_file "$DOTFILES_DIR/config/git/ignore" "$HOME/.config/git/ignore"
 link_file "$DOTFILES_DIR/config/gh/config.yml" "$HOME/.config/gh/config.yml"

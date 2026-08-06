@@ -20,6 +20,10 @@ assert_file() {
   [[ -f "$1" ]] || fail "expected file: $1"
 }
 
+assert_dir() {
+  [[ -d "$1" ]] || fail "expected directory: $1"
+}
+
 assert_link() {
   local target="$1" source="$2"
   [[ -L "$target" ]] || fail "expected symlink: $target"
@@ -65,6 +69,7 @@ assert_link "$HOME/.zprofile" "$REPO_DIR/home/.zprofile"
 assert_link "$HOME/.zshenv" "$REPO_DIR/home/.zshenv"
 assert_link "$HOME/.gitconfig" "$REPO_DIR/home/.gitconfig"
 assert_link "$HOME/.config/tmux/tmux.conf" "$REPO_DIR/config/tmux/tmux.conf"
+assert_dir "$HOME/.local/share/tmux/resurrect"
 assert_link "$HOME/.config/zed/settings.json" "$REPO_DIR/config/zed/settings.json"
 assert_link "$HOME/.config/git/ignore" "$REPO_DIR/config/git/ignore"
 assert_link "$HOME/.config/gh/config.yml" "$REPO_DIR/config/gh/config.yml"
@@ -81,6 +86,8 @@ assert_link "$HOME/.pi/agent/skills" "$REPO_DIR/pi/skills"
 "$INSTALL" --skip-brew --skip-oh-my-zsh > "$TEST_ROOT/second-run.out"
 grep -q "ok: $HOME/.zshrc" "$TEST_ROOT/second-run.out" \
   || fail 'second run did not recognize expected symlink'
+grep -q "ok: $HOME/.local/share/tmux/resurrect" "$TEST_ROOT/second-run.out" \
+  || fail 'second run did not recognize expected tmux resurrect directory'
 [[ ! -e "$HOME/.dotfiles-backup" ]] || fail 'second run created an unnecessary backup'
 
 # Files with the same basename must retain their HOME-relative paths in backups.
