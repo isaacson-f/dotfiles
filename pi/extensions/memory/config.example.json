@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "vaultRoot": "/absolute/path/to/your/Obsidian-vault",
+  "memorySubdirectory": "memory",
+  "limits": { "user": 12000, "global": 16000, "repository": 16000 },
+  "injection": {
+    "mode": "retrieval-first",
+    "maxChars": 2000,
+    "pins": {
+      "user": ["Exact existing essential preference to inject every turn."],
+      "global": [],
+      "repository": []
+    }
+  },
+  "autoConsolidation": { "enabled": true },
+  "autoReview": { "enabled": true }
+}

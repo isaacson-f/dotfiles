@@ -1,0 +1,19 @@
+# Pi retrieval-first memory
+
+Detailed user, global, and repository memories live in `USER.md`, `MEMORY.md`, and `Repositories/*/MEMORY.md`. Scheduled maintenance conservatively removes clutter; retained entries stay verbatim. The `memory` tool remains the authoritative way to search or view them; it searches user, global, and one shared logical collection of all registry-known repository stores from any cwd, retaining repository provenance.
+
+## Context injection
+
+Every turn injects only configured, exact existing pins plus a bounded category index. It never injects recent-entry previews, generated factual summaries, or other detailed memory. Category rows are data-only scope/name/description/keyword records intended to suggest useful `memory(action: "search")` terms. Pins are prioritized and never truncated within `injection.maxChars`. The category index has its own budget, `injection.indexMaxChars` (default 6000): USER, global, and the current repository are admitted first, then other repositories, each store group whole or not at all; omitted stores are named so search still reaches them. Store size limits can therefore be generous: detailed memory is only read through search.
+
+## Daily unattended cleanup and indexing
+
+The scheduled job cleans USER, GLOBAL, and every direct registered `Repositories/*/MEMORY.md` store, then rereads the stores and rebuilds category indexes in the same run. No review/approval step or separate agent is involved. It calls the configured Luna model directly, with the configured Haiku fallback, without tools.
+
+Cleanup can remove up to 40 entries and merge up to 20 groups (1-10 sources each) per store per run. Its goal is hygiene, not size: remove temporary task status and duplicates, and merge entries restating one topic; verbose entries are tightened only above 80% of the limit. Plans are applied leniently: each operation is accepted or skipped on its own (pins, unknown IDs, reused IDs, missing or consumed removal evidence, colliding merge content), so one bad operation never discards the rest. Merges apply before removals. Only an uninterpretable plan (`invalid_json`, `invalid_root_shape`, non-array `remove`/`merge`) or one that would empty a store fails the pass. Skipped operations are counted in the log, never echoed.
+
+Before a changed store is committed, a private JSON backup under `<vaultRoot>/<memorySubdirectory>/.cleanup-backups/` records the exact serialized source, recency metadata, pins, and ID-based removal reasons and merge groups. Restore only with owner approval, preserving subsequent writes. Backups are not automatically deleted. Source drift, cancellation, invalid plans, or backup failures prevent cleanup commits. Logs contain scope, counts, and fixed failure codes only, never source or provider error text. Rejected cleanup plans report `invalid_plan/<reason>` (`invalid_json`, `invalid_root_shape`, `invalid_remove_array`, `invalid_merge_array`, or `would_empty_store`).
+
+Cleanup runs even when an index is current. Index generation skips matching fingerprints, and publishes separate atomic `*.index.json` sidecars. Failed generation preserves the prior index; stale indexes remain discoverable with a lag label. Repository provenance is retained; arbitrary directories are never crawled. There is no per-store deadline. Each provider request is abandoned after 5 minutes even if the provider ignores cancellation, falling back to the next configured model; the whole job is bounded at 60 minutes. Index failures log a fixed code (`invalid_json`, `invalid_categories`, `external_drift`, `aborted`, `request_timeout`, `provider_request_failed`, ...).
+
+The installed launchd wrapper imports the implementation at each run; it needs no reinstall. Existing Pi sessions retain their frozen memory context; start a new session to see fresh injected indexes.
