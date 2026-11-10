@@ -69,7 +69,7 @@ export async function reviewExchange(config: MemoryConfig, cwd: string, exchange
   const response = await registry.complete(model, {
     systemPrompt: REVIEW_SYSTEM_PROMPT,
     messages: [{ role: "user", content: [{ type: "text", text: JSON.stringify(data) }], timestamp: Date.now() }],
-  }, { signal, cacheRetention: "none", maxTokens: 900 });
+  }, { signal, cacheRetention: "none" });
   if (signal.aborted || !isCurrent()) return cancelled();
   const raw = responseText(response?.content);
   if (!raw) return { code: "invalid_proposal", message: "review returned no text" };

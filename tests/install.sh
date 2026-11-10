@@ -82,6 +82,8 @@ assert_link "$HOME/.pi/agent/settings.json" "$REPO_DIR/pi/settings.json"
 assert_link "$HOME/.pi/agent/models.json" "$REPO_DIR/pi/models.json"
 assert_link "$HOME/.pi/agent/extensions" "$REPO_DIR/pi/extensions"
 assert_link "$HOME/.pi/agent/skills" "$REPO_DIR/pi/skills"
+assert_link "$HOME/.local/bin/pi-memory-summary" "$REPO_DIR/pi/memory-summary/pi-memory-summary"
+assert_link "$HOME/Library/LaunchAgents/com.francis.pi-memory-summary.plist" "$REPO_DIR/pi/memory-summary/com.francis.pi-memory-summary.plist"
 
 "$INSTALL" --skip-brew --skip-oh-my-zsh > "$TEST_ROOT/second-run.out"
 grep -q "ok: $HOME/.zshrc" "$TEST_ROOT/second-run.out" \

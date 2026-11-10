@@ -76,7 +76,7 @@ export async function consolidateSnapshot(config: MemoryConfig, snapshot: Target
   const response = await registry.complete(model, {
     systemPrompt: "Return strict JSON only: {\"groups\":[{\"sources\":[\"id\"],\"content\":\"replacement\"}]}. Consolidate the supplied entries into shorter durable entries. Drop temporary task status (PR/CI/commit/push/deploy progress, pending or unverified work, test outcomes, container or job state) while preserving any reusable rule it carries.",
     messages: [{ role: "user", content: [{ type: "text", text: JSON.stringify(data) }], timestamp: Date.now() }],
-  }, { signal, cacheRetention: "none", maxTokens: 1200 });
+  }, { signal, cacheRetention: "none" });
   if (signal.aborted || !isCurrent()) return cancelled();
   const raw = responseText(response?.content);
   if (!raw) return { code: "invalid_response", message: "model returned no text" };

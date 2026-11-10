@@ -1,0 +1,51 @@
+#!/usr/bin/env node
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const here = dirname(fileURLToPath(import.meta.url));
+const log = line => console.log(`${new Date().toISOString()} pi-memory-summary: ${line}`);
+
+/**
+ * Triggered every 15 minutes by launchd, regardless of whether the Mac is in use. The first trigger of the
+ * day that completes without a transient failure records the date; later triggers that day exit silently.
+ * Transient failures (sleep-severed requests, timeouts, provider outages) leave the date unrecorded, so the
+ * next trigger retries.
+ */
+async function main() {
+  const extensionRoot = process.env.PI_MEMORY_EXTENSION_ROOT ?? join(homedir(), ".pi", "agent", "extensions", "memory");
+  const [{ loadConfig }, { runConfiguredDailySummary }, { withDailySummaryLock }, schedule] = await Promise.all([
+    import(join(extensionRoot, "config.ts")),
+    import(join(extensionRoot, "daily-summary.ts")),
+    import(join(here, "lock.ts")),
+    import(join(here, "schedule.ts")),
+  ]);
+  const config = await loadConfig();
+  const memoryDirectory = join(config.vaultRoot, config.memorySubdirectory);
+  const completedPath = join(memoryDirectory, ".daily-summary-completed");
+  const today = schedule.localDate(new Date());
+  if (process.env.PI_MEMORY_FORCE_RUN !== "1" && await schedule.readCompletedDate(completedPath) === today) return;
+
+  const result = await withDailySummaryLock(join(memoryDirectory, ".daily-summary.lock"), async () => {
+    const started = Date.now();
+    log("run started");
+    const outcome = await runConfiguredDailySummary(config);
+    // Deliberately status-only: source memory, responses, credentials, and paths never enter logs.
+    for (const line of outcome.messages) log(line);
+    const seconds = Math.round((Date.now() - started) / 1000);
+    if (schedule.hasTransientFailure(outcome.messages)) {
+      log(`run finished in ${seconds}s with a transient failure; will retry on the next trigger`);
+      process.exitCode = 1;
+      return;
+    }
+    await schedule.writeCompletedDate(completedPath, today);
+    log(`run finished in ${seconds}s; recorded completion for ${today}${outcome.failed ? ` (${outcome.failed} content failures kept prior data)` : ""}`);
+  });
+  if (result === "already-running") log("already running");
+}
+
+void main().catch(() => {
+  // Dynamic imports, configuration, runtime startup, and summary failures share this path-safe label.
+  log("startup failed; will retry on the next trigger");
+  process.exitCode = 1;
+});

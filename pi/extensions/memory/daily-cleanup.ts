@@ -109,8 +109,8 @@ Age alone does not establish staleness. Never declare an operational fact false 
 Each ID may appear in at most one removal or merge. Do not empty the store. Invalid operations are skipped individually. No commentary, paths outside entries, or secrets in the output.`;
 
 /** The exact read-only request used for cleanup generation; callers still must not commit its plan. */
-export function dailyCleanupGenerationInput(target: DailySummaryTarget, pins: string[]): { systemPrompt: string; text: string; maxTokens: number } {
-  return { systemPrompt: SYSTEM_PROMPT, text: JSON.stringify({scope:target.target,usage:target.usage,limit:target.limit,entries:target.entries.map((text,index)=>({id:String(index+1),text,pinned:pins.includes(text)}))}), maxTokens: 16_000 };
+export function dailyCleanupGenerationInput(target: DailySummaryTarget, pins: string[]): { systemPrompt: string; text: string } {
+  return { systemPrompt: SYSTEM_PROMPT, text: JSON.stringify({scope:target.target,usage:target.usage,limit:target.limit,entries:target.entries.map((text,index)=>({id:String(index+1),text,pinned:pins.includes(text)}))}) };
 }
 
 /** Recoverable source backup is required before any cleanup mutation. No memory content enters logs. */

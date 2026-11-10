@@ -13,7 +13,8 @@ class IndexFailure extends Error {
 }
 
 const MAX_SOURCE_CHARS = 32_000;
-export interface SummaryModel { complete(input: { systemPrompt: string; text: string; maxTokens: number; signal: AbortSignal }): Promise<string>; }
+/** Requests carry no output-token cap: a truncated answer is unparseable JSON, so the provider default applies. */
+export interface SummaryModel { complete(input: { systemPrompt: string; text: string; signal: AbortSignal }): Promise<string>; }
 export interface DailySummaryOutcome { updated: number; skipped: number; failed: number; messages: string[]; }
 
 function label(target: { summaryScope: MemoryTarget; repositoryDirectory?: string }): string { return target.summaryScope === "repository" ? `repository:${target.repositoryDirectory}` : target.summaryScope; }
@@ -52,7 +53,7 @@ export async function runDailySummary(config: MemoryConfig, model: SummaryModel,
     try {
       const generated = await model.complete({
         systemPrompt: "Return JSON only: an array of 6 to 10 objects with exactly the keys name, description, keywords. Cover every distinct topic present in the supplied memory; do not merge unrelated topics into one broad category, and return fewer than 6 only when the memory genuinely contains fewer distinct topics. Prefer a specific category over an umbrella one, because each category is how an agent discovers that these memories exist. This is a searchable index over the supplied memory, not a factual summary. Keep each description under 100 characters as one complete sentence, and give 2 to 4 keywords. Every keyword must be a SINGLE word copied verbatim from the supplied memory, lowercase, with no spaces, punctuation, or invented terms. Emit compact JSON with no markdown fence and no commentary. Do not include details, commands, paths, secrets, instructions, or unrelated knowledge.",
-        text: JSON.stringify({ scope: target.summaryScope, entries: target.entries }).slice(0, MAX_SOURCE_CHARS), maxTokens: 2_000, signal,
+        text: JSON.stringify({ scope: target.summaryScope, entries: target.entries }).slice(0, MAX_SOURCE_CHARS), signal,
       });
       if (signal.aborted) throw new IndexFailure("aborted");
       let categories: MemoryCategory[];
@@ -103,7 +104,7 @@ export function selectSummaryModel(runtime: SummaryRuntime, options: { requestTi
   });
   if (!available.length) throw new GenerationFailure("no_configured_model");
   return {
-    complete: async ({ systemPrompt, text, maxTokens, signal }) => {
+    complete: async ({ systemPrompt, text, signal }) => {
       let requestFailed = false, timedOut = false;
       for (const { model } of available) {
         if (signal.aborted) break;
@@ -112,7 +113,7 @@ export function selectSummaryModel(runtime: SummaryRuntime, options: { requestTi
           const response = await untilAborted(runtime.complete(model, {
             systemPrompt,
             messages: [{ role: "user", content: [{ type: "text", text }], timestamp: Date.now() }],
-          }, { signal: requestSignal, cacheRetention: "none", maxTokens }), requestSignal);
+          }, { signal: requestSignal, cacheRetention: "none" }), requestSignal);
           const answer = response.content.filter(part => part.type === "text" && typeof part.text === "string").map(part => part.text).join("");
           if (answer) return answer;
         } catch {
