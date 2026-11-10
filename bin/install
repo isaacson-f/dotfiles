@@ -336,6 +336,12 @@ link_file "$DOTFILES_DIR/pi/models.json" "$HOME/.pi/agent/models.json"
 link_file "$DOTFILES_DIR/pi/extensions" "$HOME/.pi/agent/extensions"
 link_file "$DOTFILES_DIR/pi/skills" "$HOME/.pi/agent/skills"
 
+# Daily Pi memory maintenance. Node resolves the symlinked launcher to its real path, so its
+# lock and schedule modules load from the repository. After changing the plist, reload it with
+# `launchctl bootout gui/$(id -u)/com.francis.pi-memory-summary` and `launchctl bootstrap gui/$(id -u) <plist>`.
+link_file "$DOTFILES_DIR/pi/memory-summary/pi-memory-summary" "$HOME/.local/bin/pi-memory-summary"
+link_file "$DOTFILES_DIR/pi/memory-summary/com.francis.pi-memory-summary.plist" "$HOME/Library/LaunchAgents/com.francis.pi-memory-summary.plist"
+
 if ! "$SKIP_BREW"; then
   install_tmux_plugins
 fi

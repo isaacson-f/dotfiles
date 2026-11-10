@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.francis.pi-memory-summary</string>
+  <!-- caffeinate holds an idle-sleep assertion only while a run is in progress. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/caffeinate</string>
+    <string>-i</string>
+    <string>-s</string>
+    <string>/opt/homebrew/bin/node</string>
+    <string>/Users/francis.isaacson/.local/bin/pi-memory-summary</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <!-- Every 15 minutes; an interval missed during sleep fires on the next wake. The launcher exits
+       immediately once the day's run has completed. -->
+  <key>StartInterval</key>
+  <integer>900</integer>
+  <key>StandardOutPath</key>
+  <string>/Users/francis.isaacson/Library/Logs/pi-memory-summary.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/francis.isaacson/Library/Logs/pi-memory-summary.log</string>
+</dict>
+</plist>

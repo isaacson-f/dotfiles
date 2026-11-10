@@ -132,8 +132,8 @@ test('merges apply before removals, so a removal citing merged evidence is skipp
 
 test('cleanup input reports usage against the limit so the model can size its consolidation',async t=>{
   const x=await fixture(t); let seen: any;
-  await runDailyCleanup(x.config,{complete:async({text,maxTokens})=>{seen={...JSON.parse(text),maxTokens};return '{"remove":[]}';}});
-  assert.equal(seen.limit,x.config.limits.user); assert.ok(seen.usage>0); assert.ok(seen.maxTokens>=8000);
+  await runDailyCleanup(x.config,{complete:async(input)=>{seen={...JSON.parse(input.text),input};return '{"remove":[]}';}});
+  assert.equal(seen.limit,x.config.limits.user); assert.ok(seen.usage>0); assert.equal("maxTokens" in seen.input,false,"cleanup must not cap model output");
 });
 
 test('reports store-emptying rejection explicitly',async t=>{
