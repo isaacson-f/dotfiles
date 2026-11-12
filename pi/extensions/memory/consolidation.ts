@@ -1,5 +1,6 @@
 import { commitConsolidation, readTargetSnapshot, validateEntry, type MemoryTarget, type TargetSnapshot } from "./store.ts";
 import type { MemoryConfig } from "./config.ts";
+import { MEMORY_MODEL, parseModelJson } from "./model-json.ts";
 
 const targets: MemoryTarget[] = ["user", "global", "repository"];
 const threshold = (snapshot: TargetSnapshot) => snapshot.usage >= Math.ceil(snapshot.limit * 0.8);
@@ -19,7 +20,7 @@ function object(value: unknown): Record<string, unknown> | undefined {
 /** Parses only the compact group format and reconstructs exact local mutations. */
 export function parseConsolidationPlan(raw: string, snapshot: TargetSnapshot): ConsolidationPlan {
   let decoded: unknown;
-  try { decoded = JSON.parse(raw); } catch { throw new Error("invalid consolidation JSON"); }
+  try { decoded = parseModelJson(raw); } catch { throw new Error("invalid consolidation JSON"); }
   const root = object(decoded);
   if (!root || Object.keys(root).length !== 1 || !Array.isArray(root.groups) || root.groups.length < 1 || root.groups.length > 8) {
     throw new Error("invalid consolidation groups");
@@ -64,9 +65,9 @@ export function responseText(content: unknown): string | undefined {
 export async function consolidateSnapshot(config: MemoryConfig, snapshot: TargetSnapshot, registry: any, signal: AbortSignal, isCurrent: () => boolean = () => true): Promise<{ code: string; message: string }> {
   const cancelled = () => ({ code: "aborted", message: "consolidation cancelled" });
   if (signal.aborted || !isCurrent()) return cancelled();
-  const model = registry?.find?.("openai-codex", "gpt-5.6-luna");
-  if (!model || model.provider !== "openai-codex" || model.id !== "gpt-5.6-luna" || !registry?.hasConfiguredAuth?.(model)) {
-    return { code: "model_unavailable", message: "gpt-5.6-luna is unavailable" };
+  const model = registry?.find?.(MEMORY_MODEL.provider, MEMORY_MODEL.id);
+  if (!model || model.provider !== MEMORY_MODEL.provider || model.id !== MEMORY_MODEL.id || !registry?.hasConfiguredAuth?.(model)) {
+    return { code: "model_unavailable", message: `${MEMORY_MODEL.id} is unavailable` };
   }
   const auth = await registry.getApiKeyAndHeaders?.(model);
   if (signal.aborted || !isCurrent()) return cancelled();

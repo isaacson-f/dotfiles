@@ -21,16 +21,16 @@ function runtime(options: { authed: string[]; known?: string[]; answers: Record<
 
 test("the first candidate is used while it answers, without contacting later providers", async () => {
   const calls: FakeCall[] = [];
-  const model = selectSummaryModel(runtime({ authed: ["openai-codex", "anthropic"], answers: { "openai-codex/gpt-5.6-luna": "[]" } }, calls) as never);
+  const model = selectSummaryModel(runtime({ authed: ["openai-codex", "anthropic"], answers: { "openai-codex/gpt-6.1-sol": "[]" } }, calls) as never);
   assert.equal(await model.complete({ systemPrompt: "s", text: "t", signal: AbortSignal.timeout(5_000) }), "[]");
-  assert.deepEqual(calls, [{ provider: "openai-codex", model: "gpt-5.6-luna" }]);
+  assert.deepEqual(calls, [{ provider: "openai-codex", model: "gpt-6.1-sol" }]);
 });
 
 test("a provider usage-limit failure falls back to the configured Claude candidate", async () => {
   const calls: FakeCall[] = [];
   const model = selectSummaryModel(runtime({
     authed: ["openai-codex", "anthropic"],
-    answers: { "openai-codex/gpt-5.6-luna": new Error("Codex error: The usage limit has been reached"), "anthropic/claude-haiku-4-5": "[]" },
+    answers: { "openai-codex/gpt-6.1-sol": new Error("Codex error: The usage limit has been reached"), "anthropic/claude-haiku-4-5": "[]" },
   }, calls) as never);
   assert.equal(await model.complete({ systemPrompt: "s", text: "t", signal: AbortSignal.timeout(5_000) }), "[]");
   assert.deepEqual(calls.map(call => call.provider), ["openai-codex", "anthropic"]);
@@ -40,7 +40,7 @@ test("an empty provider response also falls back instead of failing the target",
   const calls: FakeCall[] = [];
   const model = selectSummaryModel(runtime({
     authed: ["openai-codex", "anthropic"],
-    answers: { "openai-codex/gpt-5.6-luna": "", "anthropic/claude-haiku-4-5": "[]" },
+    answers: { "openai-codex/gpt-6.1-sol": "", "anthropic/claude-haiku-4-5": "[]" },
   }, calls) as never);
   assert.equal(await model.complete({ systemPrompt: "s", text: "t", signal: AbortSignal.timeout(5_000) }), "[]");
   assert.deepEqual(calls.map(call => call.provider), ["openai-codex", "anthropic"]);
@@ -88,7 +88,7 @@ test("when every available candidate fails, the reported error names no provider
   const calls: FakeCall[] = [];
   const model = selectSummaryModel(runtime({
     authed: ["openai-codex", "anthropic"],
-    answers: { "openai-codex/gpt-5.6-luna": new Error("token=secret-value"), "anthropic/claude-haiku-4-5": new Error("token=secret-value") },
+    answers: { "openai-codex/gpt-6.1-sol": new Error("token=secret-value"), "anthropic/claude-haiku-4-5": new Error("token=secret-value") },
   }, calls) as never);
   await assert.rejects(() => model.complete({ systemPrompt: "s", text: "t", signal: AbortSignal.timeout(5_000) }), error => {
     assert.ok(error instanceof GenerationFailure);

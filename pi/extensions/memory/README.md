@@ -8,7 +8,7 @@ Every turn injects only configured, exact existing pins plus a bounded category 
 
 ## Daily unattended cleanup and indexing
 
-The scheduled job cleans USER, GLOBAL, and every direct registered `Repositories/*/MEMORY.md` store, then rereads the stores and rebuilds category indexes in the same run. No review/approval step or separate agent is involved. It calls the configured Luna model directly, with the configured Haiku fallback, without tools.
+The scheduled job cleans USER, GLOBAL, and every direct registered `Repositories/*/MEMORY.md` store, then rereads the stores and rebuilds category indexes in the same run. No review/approval step or separate agent is involved. It calls `MEMORY_MODEL` (`openai-codex/gpt-6.1-sol`, defined in `model-json.ts`) directly, with a Claude Haiku fallback, without tools. Model answers may be fenced or followed by prose; `parseModelJson` extracts the JSON value before strict validation.
 
 Cleanup can remove up to 40 entries and merge up to 20 groups (1-10 sources each) per store per run. Its goal is hygiene, not size: remove temporary task status and duplicates, and merge entries restating one topic; verbose entries are tightened only above 80% of the limit. Plans are applied leniently: each operation is accepted or skipped on its own (pins, unknown IDs, reused IDs, missing or consumed removal evidence, colliding merge content), so one bad operation never discards the rest. Merges apply before removals. Only an uninterpretable plan (`invalid_json`, `invalid_root_shape`, non-array `remove`/`merge`) or one that would empty a store fails the pass. Skipped operations are counted in the log, never echoed.
 

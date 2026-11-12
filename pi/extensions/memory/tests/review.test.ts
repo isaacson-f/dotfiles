@@ -16,7 +16,7 @@ async function fixture() {
   return { root, repo, config: parseConfig({ enabled: true, vaultRoot: join(root, "vault"), memorySubdirectory: "memory" }) };
 }
 const registry = (content: string, after?: () => void) => ({
-  find: () => ({ provider: "openai-codex", id: "gpt-5.6-luna" }), hasConfiguredAuth: () => true,
+  find: () => ({ provider: "openai-codex", id: "gpt-6.1-sol" }), hasConfiguredAuth: () => true,
   getApiKeyAndHeaders: async () => ({ ok: true, apiKey: "test" }),
   complete: async () => { after?.(); return { content }; },
 });

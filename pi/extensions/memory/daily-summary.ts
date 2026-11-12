@@ -1,6 +1,7 @@
 import { commitMemoryIndex, readDailySummaryTargets, readMemoryIndex, validateMemoryCategories, type MemoryCategory } from "./store.ts";
 import type { MemoryConfig, MemoryTarget } from "./config.ts";
 import { GenerationFailure, runDailyCleanup, type CleanupOutcome } from "./daily-cleanup.ts";
+import { MEMORY_MODEL, parseModelJson } from "./model-json.ts";
 
 /** A hung provider request is abandoned after this long so the next candidate (or store) can proceed. */
 export const REQUEST_TIMEOUT_MS = 300_000;
@@ -36,9 +37,7 @@ function sanitizeGeneratedCategories(value: unknown, source: string): unknown {
 }
 /** Strict data-only category shape keeps model output compact and prevents directives entering context. */
 export function parseCategories(output: string, source: string): MemoryCategory[] {
-  // Some providers wrap JSON-only answers in a Markdown code fence; accept that framing, nothing else.
-  const unfenced = output.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-  return validateMemoryCategories(sanitizeGeneratedCategories(JSON.parse(unfenced), source), source);
+  return validateMemoryCategories(sanitizeGeneratedCategories(parseModelJson(output), source), source);
 }
 
 /** Generates separate metadata indexes; it never changes detailed memory entries. */
@@ -75,7 +74,7 @@ export async function runDailySummary(config: MemoryConfig, model: SummaryModel,
 /** Runs the fixed direct no-tools summary model path from the extension's dependency context. */
 /** Ordered preference; Claude covers Codex quota exhaustion or unavailability. */
 export const SUMMARY_MODEL_CANDIDATES = [
-  { provider: "openai-codex", model: "gpt-5.6-luna" },
+  { provider: MEMORY_MODEL.provider, model: MEMORY_MODEL.id },
   { provider: "anthropic", model: "claude-haiku-4-5" },
 ] as const;
 interface SummaryRuntime {

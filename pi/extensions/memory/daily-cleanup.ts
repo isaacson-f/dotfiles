@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { lstat, mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { parseModelJson } from './model-json.ts';
 import type { MemoryConfig } from './config.ts';
 import type { SummaryModel } from './daily-summary.ts';
 import { commitConsolidation, readDailySummaryTargets, type DailySummaryTarget } from './store.ts';
@@ -41,7 +42,7 @@ const isId = (value: unknown): value is string => typeof value === 'string';
  */
 export function parseDailyCleanupPlan(raw: string, target: DailySummaryTarget, pins: string[]): { entries: string[]; remove: Removal[]; merge: Merge[]; skipped: number } {
   let decoded: unknown;
-  try { decoded=JSON.parse(raw.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'')); } catch { return invalid('invalid_json'); }
+  try { decoded=parseModelJson(raw); } catch { return invalid('invalid_json'); }
   const root=record(decoded);
   if (!root || !(Object.hasOwn(root,'remove') || Object.hasOwn(root,'merge'))) return invalid('invalid_root_shape');
   const rawRemove=Object.hasOwn(root,'remove') ? root.remove : [];

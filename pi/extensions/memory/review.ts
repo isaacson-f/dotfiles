@@ -2,6 +2,7 @@ import { Buffer } from "node:buffer";
 import { commitConsolidation, readTargetSnapshot, validateEntry, type MemoryTarget, type TargetSnapshot } from "./store.ts";
 import type { MemoryConfig } from "./config.ts";
 import { responseText } from "./consolidation.ts";
+import { MEMORY_MODEL, parseModelJson } from "./model-json.ts";
 
 const targets: MemoryTarget[] = ["user", "global", "repository"];
 const maxExchangeBytes = 16 * 1024;
@@ -43,7 +44,7 @@ export function validateReviewedEntry(content: unknown, exchange: string): strin
 export function parseReviewAdditions(raw: string, exchange: string): ReviewAddition[] {
   if (Buffer.byteLength(raw, "utf8") > maxResponseBytes) throw new Error("review response is too large");
   let decoded: unknown;
-  try { decoded = JSON.parse(raw); } catch { throw new Error("invalid review JSON"); }
+  try { decoded = parseModelJson(raw); } catch { throw new Error("invalid review JSON"); }
   const root = object(decoded);
   if (!root || Object.keys(root).length !== 1 || !Array.isArray(root.additions) || root.additions.length > maxAdditions) throw new Error("invalid review additions");
   const additions = root.additions.map(value => {
@@ -59,8 +60,8 @@ export async function reviewExchange(config: MemoryConfig, cwd: string, exchange
   if (signal.aborted || !isCurrent()) return cancelled();
   const snapshots = await Promise.all(targets.map(target => readTargetSnapshot(config, cwd, target)));
   if (signal.aborted || !isCurrent()) return cancelled();
-  const model = registry?.find?.("openai-codex", "gpt-5.6-luna");
-  if (!model || model.provider !== "openai-codex" || model.id !== "gpt-5.6-luna" || !registry?.hasConfiguredAuth?.(model)) return { code: "model_unavailable", message: "gpt-5.6-luna is unavailable" };
+  const model = registry?.find?.(MEMORY_MODEL.provider, MEMORY_MODEL.id);
+  if (!model || model.provider !== MEMORY_MODEL.provider || model.id !== MEMORY_MODEL.id || !registry?.hasConfiguredAuth?.(model)) return { code: "model_unavailable", message: `${MEMORY_MODEL.id} is unavailable` };
   const auth = await registry.getApiKeyAndHeaders?.(model);
   if (signal.aborted || !isCurrent()) return cancelled();
   if (!auth?.ok || !auth.apiKey) return { code: "authentication_unavailable", message: "model authentication is unavailable" };

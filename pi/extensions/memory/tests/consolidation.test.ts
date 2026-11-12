@@ -84,7 +84,7 @@ test("abort after a model response does not parse or commit memory", { timeout: 
   const before = await readTargetSnapshot(x.config, x.repo, "global"), controller = new AbortController();
   let completeCalls = 0;
   const registry = {
-    find: () => ({ provider: "openai-codex", id: "gpt-5.6-luna" }), hasConfiguredAuth: () => true,
+    find: () => ({ provider: "openai-codex", id: "gpt-6.1-sol" }), hasConfiguredAuth: () => true,
     getApiKeyAndHeaders: async () => ({ ok: true, apiKey: "test" }),
     complete: async () => { completeCalls++; controller.abort(); return { content: JSON.stringify({ groups: [{ sources: ["1", "2"], content: "Compact entry." }] }) }; },
   };
